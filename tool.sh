@@ -40,7 +40,7 @@ add_config() {
     fi
  
     if [ "$online" = "n" ]; then
-        echo "请将同名文件复制到mod目录下。"
+        echo "请将文件复制到mod目录下，并命名为$name.conf"
     else
         wget --spider -q "$url"
 
