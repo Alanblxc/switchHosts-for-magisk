@@ -9,11 +9,6 @@ export PATH=/system/bin:$BUSYBOXDIR:$PATH
 
 counter=0
 
-chmod 777 $HOSTS_FILE
-chmod 777 $Config
-chmod +x $BUSYBOXDIR/jq
-chmod +x $BUSYBOXDIR/wget
-
 start() {
     echo "" > "$MODDIR/log.txt"
     echo "" > "$HOSTS_FILE"
@@ -97,6 +92,8 @@ main() {
     echo "success: 去重成功" >> "$MODDIR/log.txt"
     cat "$MODDIR/自定义Host.conf" >> $HOSTS_FILE
     echo "success: 导入自定义Hosts成功" >> "$MODDIR/log.txt"
+    HOSTS_LINE_COUNT=$(wc -l < "$HOSTS_FILE")
+    sed -i "s/{math}/$HOSTS_LINE_COUNT/g" "$MODDIR/module.prop"
 }
 
 main
