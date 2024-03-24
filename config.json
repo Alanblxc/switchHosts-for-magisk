@@ -6,7 +6,7 @@
   },
   {
     "name": "去广告",
-    "update": false,
-    "url": ""
+    "update": true,
+    "url": "https://raw.gitmirror.com/lingeringsound/10007_auto/master/all"
   }
 ]
