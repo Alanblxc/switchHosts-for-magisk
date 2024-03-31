@@ -8,20 +8,5 @@
     "name": "10007",
     "update": true,
     "url": "https://raw.gitmirror.com/lingeringsound/10007_auto/master/all"
-  },
-  {
-    "name": "AdAway 官方 hosts",
-    "update": true,
-    "url": "https://adaway.org/hosts.txt"
-  },
-  {
-    "name": "Pete Lowe blocklist hosts",
-    "update": true,
-    "url": "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=0&mimetype=plaintext"
-  },
-  {
-    "name": "StevenBlack Unified hosts",
-    "update": true,
-    "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
   }
 ]

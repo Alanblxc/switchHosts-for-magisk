@@ -12,6 +12,7 @@ counter=0
 start() {
     echo "" > "$MODDIR/log.txt"
     echo "" > "$HOSTS_FILE"
+    chmod +x "$MODDIR/tool.sh"
 }
 start
 
