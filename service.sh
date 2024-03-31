@@ -9,10 +9,16 @@ export PATH=/system/bin:$BUSYBOXDIR:$PATH
 
 counter=0
 
+
+
 start() {
     echo "" > "$MODDIR/log.txt"
     echo "" > "$HOSTS_FILE"
     chmod +x "$MODDIR/tool.sh"
+    chmod 777 $MODDIR/system/etc/hosts
+    chmod 777 $Config
+    chmod +x $BUSYBOXDIR/jq
+    chmod +x $BUSYBOXDIR/wget
 }
 start
 
