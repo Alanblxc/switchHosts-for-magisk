@@ -9,11 +9,23 @@ export PATH=/system/bin:$BUSYBOXDIR:$PATH
 
 counter=0
 
-
+while getopts ":c:" opt; do
+  case $opt in
+    c)
+      $OPTARG
+      exit 0
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+  esac
+done
 
 start() {
     echo "" > "$MODDIR/log.txt"
     echo "" > "$HOSTS_FILE"
+    mkdir -p "$MODDIR/tmp"
     chmod +x "$MODDIR/tool.sh"
     chmod 777 $MODDIR/system/etc/hosts
     chmod 777 $Config
@@ -93,14 +105,48 @@ check_update() {
 }
 
 main() {
+    mkdir -p $MODDIR/cron.d
+    echo "0 0 * * * $MODDIR/service.sh -c 'check_update'" > $MODDIR/cron.d/root
+    chmod 600 $MODDIR/cron.d/root
+    crond -c $MODDIR/cron.d
+    
     check_update
     read_config
     sort $HOSTS_FILE | uniq > $TEMP_FILE && mv $TEMP_FILE $HOSTS_FILE
     echo "success: 去重成功" >> "$MODDIR/log.txt"
     cat "$MODDIR/自定义Host.conf" >> $HOSTS_FILE
     echo "success: 导入自定义Hosts成功" >> "$MODDIR/log.txt"
+
+   if [ -f "$MODDIR/白名单.conf" ]; then
+        echo "info: 找到白名单文件" >> "$MODDIR/log.txt"
+        # 使用 while IFS= read -r 确保读取第一行
+        while IFS= read -r domain || [ -n "$domain" ]; do
+            domain=$(echo "$domain" | xargs)
+            if [ -n "$domain" ]; then
+                echo "info: 正在处理域名: $domain" >> "$MODDIR/log.txt"
+                
+                # 使用 grep -v 直接匹配域名
+                grep -v "$domain" "$HOSTS_FILE" > "$HOSTS_FILE.tmp"
+                mv "$HOSTS_FILE.tmp" "$HOSTS_FILE"
+                
+                # 验证删除结果
+                if grep -q "$domain" "$HOSTS_FILE"; then
+                    echo "warning: 域名 $domain 可能未被完全删除" >> "$MODDIR/log.txt"
+                else
+                    echo "success: 成功删除域名: $domain" >> "$MODDIR/log.txt"
+                fi
+            fi
+        done < "$MODDIR/白名单.conf"
+        echo "success: 白名单处理完成" >> "$MODDIR/log.txt"
+    else
+        echo "warning: 未找到白名单文件" >> "$MODDIR/log.txt"
+    fi
+
     HOSTS_LINE_COUNT=$(wc -l < "$HOSTS_FILE")
-    sed -i "s/{math}/$HOSTS_LINE_COUNT/g" "$MODDIR/module.prop"
+    sed -i "s/当前规则数量/当前规则数量 $HOSTS_LINE_COUNT/" "$MODDIR/module.prop"
+    echo "success: 更新规则数量为 $HOSTS_LINE_COUNT" >> "$MODDIR/log.txt"
+    
+    rm -r "$MODDIR/tmp"
 }
 
 main
