@@ -9,18 +9,6 @@ export PATH=/system/bin:$BUSYBOXDIR:$PATH
 
 counter=0
 
-while getopts ":c:" opt; do
-  case $opt in
-    c)
-      $OPTARG
-      exit 0
-      ;;
-    \?)
-      echo "Invalid option: -$OPTARG" >&2
-      exit 1
-      ;;
-  esac
-done
 
 start() {
     echo "" > "$MODDIR/log.txt"
@@ -106,7 +94,7 @@ check_update() {
 
 main() {
     mkdir -p $MODDIR/cron.d
-    echo "0 0 * * * $MODDIR/service.sh -c 'check_update'" > $MODDIR/cron.d/root
+    echo "0 0 * * * $MODDIR/service.sh" > $MODDIR/cron.d/root
     chmod 600 $MODDIR/cron.d/root
     crond -c $MODDIR/cron.d
     
