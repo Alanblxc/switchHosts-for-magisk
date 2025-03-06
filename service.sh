@@ -131,7 +131,7 @@ main() {
     fi
 
     HOSTS_LINE_COUNT=$(wc -l < "$HOSTS_FILE")
-    sed -i "s/当前规则数量/当前规则数量 $HOSTS_LINE_COUNT/" "$MODDIR/module.prop"
+    sed -i "s/当前规则数量 [0-9]*/当前规则数量 $HOSTS_LINE_COUNT/" "$MODDIR/module.prop"
     echo "success: 更新规则数量为 $HOSTS_LINE_COUNT" >> "$MODDIR/log.txt"
     
     rm -r "$MODDIR/tmp"
