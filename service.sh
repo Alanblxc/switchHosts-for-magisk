@@ -6,9 +6,9 @@ Config=$MODDIR/config.json
 HOSTS_FILE="$MODDIR/system/etc/hosts"
 TEMP_FILE="$MODDIR/tmp/temp.txt"
 export PATH=/system/bin:$BUSYBOXDIR:$PATH
+source "$MODDIR/action.sh" "-i"
 
 counter=0
-
 
 start() {
     echo "" > "$MODDIR/log.txt"
@@ -19,12 +19,13 @@ start() {
     chmod 777 $Config
     chmod +x $BUSYBOXDIR/jq
     chmod +x $BUSYBOXDIR/wget
+    chmod +x $BUSYBOXDIR/crond
 }
 start
 
 # 等待开机完成
 while [ "$(getprop sys.boot_completed)" != "1" ]; do
-    sleep 30
+    sleep 40
     echo "wait: 等待开机" >> "$MODDIR/log.txt"
 done
 echo "success: 开机成功" >> "$MODDIR/log.txt"
@@ -105,19 +106,16 @@ main() {
     cat "$MODDIR/自定义Host.conf" >> $HOSTS_FILE
     echo "success: 导入自定义Hosts成功" >> "$MODDIR/log.txt"
 
-   if [ -f "$MODDIR/白名单.conf" ]; then
+    if [ -f "$MODDIR/白名单.conf" ]; then
         echo "info: 找到白名单文件" >> "$MODDIR/log.txt"
-        # 使用 while IFS= read -r 确保读取第一行
         while IFS= read -r domain || [ -n "$domain" ]; do
             domain=$(echo "$domain" | xargs)
             if [ -n "$domain" ]; then
                 echo "info: 正在处理域名: $domain" >> "$MODDIR/log.txt"
                 
-                # 使用 grep -v 直接匹配域名
                 grep -v "$domain" "$HOSTS_FILE" > "$HOSTS_FILE.tmp"
                 mv "$HOSTS_FILE.tmp" "$HOSTS_FILE"
                 
-                # 验证删除结果
                 if grep -q "$domain" "$HOSTS_FILE"; then
                     echo "warning: 域名 $domain 可能未被完全删除" >> "$MODDIR/log.txt"
                 else
@@ -131,9 +129,18 @@ main() {
     fi
 
     HOSTS_LINE_COUNT=$(wc -l < "$HOSTS_FILE")
-    sed -i "s/当前规则数量 [0-9]*/当前规则数量 $HOSTS_LINE_COUNT/" "$MODDIR/module.prop"
+    
+    # 先提取description中除了"当前规则数量"及其后面数字之外的部分
+    BASE_DESCRIPTION=$(grep "description=" "$MODDIR/module.prop" | sed 's/description=\(.*\)当前规则数量 [0-9]*/\1/')
+    
+    # 然后更新module.prop文件，使用新的基础描述和新的规则数量
+    sed -i "s/description=.*/description=${BASE_DESCRIPTION}当前规则数量 $HOSTS_LINE_COUNT/" "$MODDIR/module.prop"
+    
     echo "success: 更新规则数量为 $HOSTS_LINE_COUNT" >> "$MODDIR/log.txt"
     
+    echo "info: 正在挂载hosts...挂载成功后无需重启"
+    mount_set_perm_for_hosts "${HOSTS_FILE}"
+    echo "success: 挂载成功!"
     rm -r "$MODDIR/tmp"
 }
 

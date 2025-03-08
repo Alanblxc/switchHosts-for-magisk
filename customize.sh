@@ -38,11 +38,6 @@ add_config(){
     "url": "https://adaway.org/hosts.txt"
   },
   {
-    "name": "Pete Lowe blocklist hosts",
-    "update": true,
-    "url": "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=0&mimetype=plaintext"
-  },
-  {
     "name": "StevenBlack Unified hosts",
     "update": true,
     "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
@@ -103,35 +98,22 @@ ad_hold(){
 }
 
 check_update_f(){
-    key_click_7=""
-    ui_print " "
-    ui_print " 是否检查更新配置文件"
-    ui_print " "
-    ui_print " 音量键 + 更新"
-    ui_print " 音量键 - 不更新"
-
-    while [ "$key_click_7" = "" ]; do
-        key_click_7=$(getevent -qlc 1 | awk '{ print $3 }' | grep 'KEY_')
-    sleep 0.2
-    done
-    case $key_click_7 in
-    KEY_VOLUMEUP)
-        ui_print "--更新配置文件--"
-        source $MODPATH/service.sh
-        ;;
-    *)
-        ui_print "--已取消--"
-        ;;
-    esac
-
+chmod +x $MODPATH/service.sh
+sh $MODPATH/service.sh
+main
 }
 
 add_config
 
-sleep 3
+sleep 2
 
 ad_hold
 
-sleep 3
+sleep 2
 
-#check_update_f
+ui_print "--更新中......请等待完成后重启--"
+ui_print "--更新速度取决于网络环境，可能会有点久，请耐心等待--"
+
+check_update_f
+
+ui_print "--更新完成，重启即可挂载--"
