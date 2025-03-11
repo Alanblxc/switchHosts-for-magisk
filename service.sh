@@ -6,7 +6,7 @@ Config=$MODDIR/config.json
 HOSTS_FILE="$MODDIR/system/etc/hosts"
 TEMP_FILE="$MODDIR/tmp/temp.txt"
 export PATH=/system/bin:$BUSYBOXDIR:$PATH
-source "$MODDIR/action.sh" "-i"
+. "$MODDIR/action.sh" "-i"
 
 counter=0
 
@@ -130,17 +130,15 @@ main() {
 
     HOSTS_LINE_COUNT=$(wc -l < "$HOSTS_FILE")
     
-    # 先提取description中除了"当前规则数量"及其后面数字之外的部分
     BASE_DESCRIPTION=$(grep "description=" "$MODDIR/module.prop" | sed 's/description=\(.*\)当前规则数量 [0-9]*/\1/')
     
-    # 然后更新module.prop文件，使用新的基础描述和新的规则数量
     sed -i "s/description=.*/description=${BASE_DESCRIPTION}当前规则数量 $HOSTS_LINE_COUNT/" "$MODDIR/module.prop"
     
     echo "success: 更新规则数量为 $HOSTS_LINE_COUNT" >> "$MODDIR/log.txt"
     
-    echo "info: 正在挂载hosts...挂载成功后无需重启"
+    echo "info: 正在挂载hosts...挂载成功后无需重启" >> "$MODDIR/log.txt"
     mount_set_perm_for_hosts "${HOSTS_FILE}"
-    echo "success: 挂载成功!"
+    echo "success: 挂载成功!" >> "$MODDIR/log.txt"
     rm -r "$MODDIR/tmp"
 }
 
