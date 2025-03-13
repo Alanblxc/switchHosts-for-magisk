@@ -31,8 +31,9 @@ jobs:
       with:
         tag_name: ${{ github.ref }}
         name: Release ${{ github.ref }}
-        body: ${{ steps.changelog.outputs.changelog }}  # 使用 changelog 内容作为 Release Body
-        generate_release_notes: false  # 禁用默认的 Changelog 生成
+        body: |
+          ${{ steps.changelog.outputs.changelog }}  # Use changelog.md content as Release Body
+        generate_release_notes: false  # Disable default changelog generation
         draft: false
         prerelease: false
         files: |
