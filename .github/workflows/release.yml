@@ -22,6 +22,7 @@ jobs:
       shell: pwsh
       run: |
         $changelog = Get-Content -Path .\changelog.md -Raw
+        echo "Changelog content: $changelog"  # 调试信息
         echo "::set-output name=changelog::$changelog"
 
     - name: Create Release and Upload Release Asset
