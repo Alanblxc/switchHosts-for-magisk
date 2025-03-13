@@ -1,3 +1,4 @@
+#!/system/bin/sh
 # info
 MODVER=`grep_prop version $MODPATH/module.prop`
 MODVERCODE=`grep_prop versionCode $MODPATH/module.prop`
@@ -7,6 +8,12 @@ ui_print " MagiskVersion=$MAGISK_VER"
 ui_print " "
 ui_print " SwitchHosts for Android"
 ui_print " By Alan"
+ui_print " "
+
+ui_print " "
+ui_print " 正在清理无关文件..."
+rm -rf $MODPATH/.git $MODPATH/.vscode $MODPATH/.github $MODPATH/README.md $MODPATH/update.json $MODPATH/changelog.md
+ui_print " 清理完成"
 ui_print " "
 
 add_config(){
@@ -40,7 +47,7 @@ add_config(){
   {
     "name": "StevenBlack Unified hosts",
     "update": true,
-    "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
+    "url": "https://hub.gitmirror.com/https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
   }
 ]
 ' > $MODPATH/config.json
