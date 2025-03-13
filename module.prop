@@ -3,5 +3,5 @@ name=SwitchHosts
 version=1.8.9
 versioncode=2025031300
 author=Alanblxc
-updateJson=https://raw.githubusercontent.com/您的用户名/switchHosts-for-magisk/main/update.json
+updateJson=https://hub.gitmirror.com/https://raw.githubusercontent.com/Alanblxc/switchHosts-for-magisk/main/update.json
 description=SwitchHosts for Android 内置github520 | 10007去广告 等规则| 当前规则数量当前规则数量 
