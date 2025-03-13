@@ -11,15 +11,21 @@ export PATH=/system/bin:$BUSYBOXDIR:$PATH
 counter=0
 
 start() {
+    EXECUTABLE_FILES="$MODDIR/tool.sh $BUSYBOXDIR/jq $BUSYBOXDIR/wget $BUSYBOXDIR/crond $Config"
     echo "" > "$MODDIR/log.txt"
     echo "" > "$HOSTS_FILE"
     mkdir -p "$MODDIR/tmp"
-    chmod +x "$MODDIR/tool.sh"
-    chmod 777 $MODDIR/system/etc/hosts
-    chmod 777 $Config
-    chmod +x $BUSYBOXDIR/jq
-    chmod +x $BUSYBOXDIR/wget
-    chmod +x $BUSYBOXDIR/crond
+    chmod 666 "$MODDIR/system/etc/hosts"
+    for file in $EXECUTABLE_FILES; do
+        if [ -f "$file" ]; then
+            chmod 755 "$file"
+        fi
+    done
+    mkdir -p $MODDIR/cron.d
+    echo "0 0 * * * $MODDIR/service.sh" > $MODDIR/cron.d/root
+    chmod 600 $MODDIR/cron.d/root
+    crond -c $MODDIR/cron.d
+    
 }
 start
 
@@ -32,7 +38,7 @@ echo "success: 开机成功" >> "$MODDIR/log.txt"
 
 # 等待联网
 echo "wait: 等待联网" >> "$MODDIR/log.txt"
-PING_ADDRESS=baidu.com
+PING_ADDRESS=www.baidu.com
 while true; do
     if ping -c 1 $PING_ADDRESS > /dev/null 2>&1; then
         echo "success: 联网成功" >> "$MODDIR/log.txt"
@@ -71,7 +77,7 @@ update() {
         else
             echo "fail: $url 无法访问，正在重试... $(($count + 1))/$retries)" >> "$MODDIR/log.txt"
             count=$(($count + 1))
-            sleep 5
+            sleep 3
         fi
     done
     
@@ -94,39 +100,51 @@ check_update() {
 }
 
 main() {
-    mkdir -p $MODDIR/cron.d
-    echo "0 0 * * * $MODDIR/service.sh" > $MODDIR/cron.d/root
-    chmod 600 $MODDIR/cron.d/root
-    crond -c $MODDIR/cron.d
-    
     check_update
     read_config
     sort $HOSTS_FILE | uniq > $TEMP_FILE && mv $TEMP_FILE $HOSTS_FILE
     echo "success: 去重成功" >> "$MODDIR/log.txt"
-    cat "$MODDIR/自定义Host.conf" >> $HOSTS_FILE
-    echo "success: 导入自定义Hosts成功" >> "$MODDIR/log.txt"
 
     if [ -f "$MODDIR/白名单.conf" ]; then
         echo "info: 找到白名单文件" >> "$MODDIR/log.txt"
-        while IFS= read -r domain || [ -n "$domain" ]; do
-            domain=$(echo "$domain" | xargs)
-            if [ -n "$domain" ]; then
-                echo "info: 正在处理域名: $domain" >> "$MODDIR/log.txt"
-                
+        while IFS= read -r line || [ -n "$line" ]; do
+            # 去除行首尾的空白字符
+            line=$(echo "$line" | xargs)
+            
+            # 跳过空行和注释行
+            if [ -z "$line" ] || [[ "$line" == \#* ]]; then
+                continue
+            fi
+            
+            domain="$line"
+            echo "info: 正在处理域名: $domain" >> "$MODDIR/log.txt"
+            
+            # 检查域名是否存在于hosts文件中
+            if grep -q "$domain" "$HOSTS_FILE"; then
+                # 域名存在，执行删除操作
                 grep -v "$domain" "$HOSTS_FILE" > "$HOSTS_FILE.tmp"
                 mv "$HOSTS_FILE.tmp" "$HOSTS_FILE"
                 
+                # 再次检查是否删除成功
                 if grep -q "$domain" "$HOSTS_FILE"; then
                     echo "warning: 域名 $domain 可能未被完全删除" >> "$MODDIR/log.txt"
                 else
-                    echo "success: 成功删除域名: $domain" >> "$MODDIR/log.txt"
+                    echo "success: 成功删除域名" >> "$MODDIR/log.txt"
                 fi
+            else
+                # 域名不存在，输出未找到的信息
+                echo "notice: 未能找到域名" >> "$MODDIR/log.txt"
             fi
         done < "$MODDIR/白名单.conf"
         echo "success: 白名单处理完成" >> "$MODDIR/log.txt"
     else
         echo "warning: 未找到白名单文件" >> "$MODDIR/log.txt"
     fi
+
+
+    cat "$MODDIR/自定义Host.conf" >> $HOSTS_FILE
+    echo "success: 导入自定义Hosts成功" >> "$MODDIR/log.txt"
+
 
     HOSTS_LINE_COUNT=$(wc -l < "$HOSTS_FILE")
     

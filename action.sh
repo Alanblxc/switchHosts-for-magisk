@@ -2,6 +2,8 @@
 
 MODDIR=${0%/*}
 BUSYBOXDIR=$MODDIR/busybox
+target_hosts_file="${0%/*}/system/etc/hosts"
+flag_file="${0%/*}/allow_flag"
 export BUSYBOX="$BUSYBOXDIR"
 
 function set_perm() {
@@ -41,9 +43,6 @@ set_perm "${target_file%/*}" ${perm_hosts} "${selinux_context}" >/dev/null 2>&1
 umount "${system_host}" >/dev/null 2>&1
 mount --bind "${target_file}" "${system_host}" >/dev/null 2>&1
 }
-
-target_hosts_file="${0%/*}/system/etc/hosts"
-flag_file="${0%/*}/allow_flag"
 
 main(){
 recovery_file="${0%/*}/mod/recovery"
