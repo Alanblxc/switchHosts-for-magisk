@@ -1,0 +1,26 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # 匹配以 v 开头的标签，例如 v1.9.0
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Zip module
+      run: |
+        zip -r SwitchHosts-${{ github.ref_name }}.zip * -x ".git/*" -x ".github/*"
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: SwitchHosts-${{ github.ref_name }}.zip
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 确保使用正确的 Token
