@@ -32,6 +32,7 @@ jobs:
         tag_name: ${{ github.ref }}
         name: Release ${{ github.ref }}
         body: ${{ steps.changelog.outputs.changelog }}  # 使用 changelog 内容作为 Release Body
+        generate_release_notes: false  # 禁用默认的 Changelog 生成
         draft: false
         prerelease: false
         files: |
