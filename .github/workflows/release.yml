@@ -113,5 +113,5 @@ jobs:
           LICENSE
 
     - name: Pull remote changes
-          run: |
-            git pull origin main
+      run: |
+        git pull origin main
