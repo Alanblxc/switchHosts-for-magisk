@@ -11,11 +11,30 @@ jobs:
     
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # 获取完整历史记录，便于版本比较
+
+    - name: Update version in update.json
+      shell: pwsh
+      run: |
+        $version = "${{ github.ref_name }}"
+        $content = Get-Content -Path .\update.json -Raw
+        $content = $content -replace '"version": ".*?"', "`"version`": `"$version`""
+        $content = $content -replace 'SwitchHosts-.*?.zip', "SwitchHosts-$version.zip"
+        $content | Set-Content -Path .\update.json
+        
+    - name: Commit update.json changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add update.json
+        git commit -m "Update version in update.json to ${{ github.ref_name }}" || echo "No changes to commit"
+        git push
 
     - name: Zip module
       shell: pwsh
       run: |
-        Compress-Archive -Path * -DestinationPath SwitchHosts-${{ github.ref_name }}.zip -Exclude ".git", ".github"
+        Compress-Archive -Path * -DestinationPath SwitchHosts-${{ github.ref_name }}.zip -Exclude ".git", ".github", ".vscode", "*.md", "LICENSE", ".gitignore", ".gitattributes","changelog.md",""update.json"
 
     - name: Read changelog
       id: changelog
