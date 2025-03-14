@@ -1,6 +1,6 @@
 {
-  "version": "${{ github.ref_name }}",
+  "version": "v1.9.0",
   "versionCode": 2025031400,
-  "zipUrl": "https://hub.gitmirror.com/?q=https://github.com/Alanblxc/switchHosts-for-magisk/releases/download/${{%20github.ref_name%20}}/SwitchHosts-${{%20github.ref_name%20}}.zip",
+  "zipUrl": "https://hub.gitmirror.com/?q=https://github.com/Alanblxc/SwitchHosts-v1.9.0.zip",
   "changelog": "https://hub.gitmirror.com/?q=https://raw.githubusercontent.com/Alanblxc/switchHosts-for-magisk/main/changelog.md"
 }
