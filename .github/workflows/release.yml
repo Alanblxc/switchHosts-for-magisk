@@ -85,9 +85,12 @@ jobs:
       run: |
         $changelog = Get-Content -Path .\changelog.md -Raw
         # 对 changelog 内容进行格式化处理，移除不兼容的字符
-        $formattedChangelog = $changelog -replace '##', '**'  # 将 Markdown 标题替换为粗体
+        $formattedChangelog = $changelog -replace '##', ''  # 移除 Markdown 标题符号
+        $formattedChangelog = $formattedChangelog -replace '\*', '-'  # 将星号替换为短横线
         echo "Changelog content: $formattedChangelog"  # 调试信息
-        echo "changelog=$formattedChangelog" >> $env:GITHUB_OUTPUT
+        echo "changelog<<EOF" >> $env:GITHUB_OUTPUT
+        echo "$formattedChangelog" >> $env:GITHUB_OUTPUT
+        echo "EOF" >> $env:GITHUB_OUTPUT
 
     - name: Create Release and Upload Release Asset
       uses: softprops/action-gh-release@v1
