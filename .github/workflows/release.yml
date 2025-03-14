@@ -13,15 +13,21 @@ jobs:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0  # 获取完整历史记录，便于版本比较
+        token: ${{ secrets.GITHUB_TOKEN }}  # 确保有足够权限进行推送
 
     - name: Update version in update.json
       shell: pwsh
       run: |
         $version = "${{ github.ref_name }}"
+        if ([string]::IsNullOrEmpty($version)) {
+          $version = "v" + (Get-Content -Path .\module.prop | Select-String -Pattern "version=(.+)" | ForEach-Object { $_.Matches.Groups[1].Value })
+        }
+        Write-Host "Current version: $version"
         $content = Get-Content -Path .\update.json -Raw
         $content = $content -replace '"version": ".*?"', "`"version`": `"$version`""
         $content = $content -replace 'SwitchHosts-.*?.zip', "SwitchHosts-$version.zip"
-        $content | Set-Content -Path .\update.json
+        $content | Set-Content -Path .\update.json -Force
+        Get-Content -Path .\update.json  # 显示更新后的内容
         
     - name: Commit update.json changes
       run: |
@@ -29,12 +35,25 @@ jobs:
         git config --local user.name "GitHub Action"
         git add update.json
         git commit -m "Update version in update.json to ${{ github.ref_name }}" || echo "No changes to commit"
-        git push
+        git push origin HEAD:master
+
+    - name: List all files before zip
+      shell: pwsh
+      run: |
+        Get-ChildItem -Path . -Recurse | Select-Object FullName
 
     - name: Zip module
       shell: pwsh
       run: |
-        Compress-Archive -Path * -DestinationPath SwitchHosts-${{ github.ref_name }}.zip -Exclude ".git", ".github", ".vscode", "*.md", "LICENSE", ".gitignore", ".gitattributes","changelog.md",""update.json"
+        # 确保 system 文件夹被包含，排除不需要的文件
+        Compress-Archive -Path * -DestinationPath SwitchHosts-${{ github.ref_name }}.zip -Exclude ".git", ".github", ".vscode", "*.md", ".gitignore", ".gitattributes", "changelog.md", "update.json"
+        
+    - name: Verify zip contents
+      shell: pwsh
+      run: |
+        # 验证 zip 文件内容
+        Expand-Archive -Path SwitchHosts-${{ github.ref_name }}.zip -DestinationPath .\verify_zip -Force
+        Get-ChildItem -Path .\verify_zip -Recurse | Select-Object FullName
 
     - name: Read changelog
       id: changelog
@@ -42,7 +61,7 @@ jobs:
       run: |
         $changelog = Get-Content -Path .\changelog.md -Raw
         echo "Changelog content: $changelog"  # 调试信息
-        echo "::set-output name=changelog::$changelog"
+        echo "changelog=$changelog" >> $env:GITHUB_OUTPUT
 
     - name: Create Release and Upload Release Asset
       uses: softprops/action-gh-release@v1
@@ -51,8 +70,8 @@ jobs:
         tag_name: ${{ github.ref }}
         name: Release ${{ github.ref }}
         body: |
-          ${{ steps.changelog.outputs.changelog }}  # Use changelog.md content as Release Body
-        generate_release_notes: false  # Disable default changelog generation
+          ${{ steps.changelog.outputs.changelog }}
+        generate_release_notes: false
         draft: false
         prerelease: false
         files: |
