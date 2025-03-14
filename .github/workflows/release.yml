@@ -84,8 +84,10 @@ jobs:
       shell: pwsh
       run: |
         $changelog = Get-Content -Path .\changelog.md -Raw
-        echo "Changelog content: $changelog"  # 调试信息
-        echo "changelog=$changelog" >> $env:GITHUB_OUTPUT
+        # 对 changelog 内容进行格式化处理，移除不兼容的字符
+        $formattedChangelog = $changelog -replace '##', '**'  # 将 Markdown 标题替换为粗体
+        echo "Changelog content: $formattedChangelog"  # 调试信息
+        echo "changelog=$formattedChangelog" >> $env:GITHUB_OUTPUT
 
     - name: Create Release and Upload Release Asset
       uses: softprops/action-gh-release@v1
