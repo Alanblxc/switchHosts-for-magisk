@@ -19,15 +19,19 @@ jobs:
     - name: Update version in update.json
       shell: pwsh
       run: |
-        $version = "${{ github.ref_name }}"
-        if ([string]::IsNullOrEmpty($version)) {
-          $version = "v" + (Get-Content -Path .\module.prop | Select-String -Pattern "version=(.+)" | ForEach-Object { $_.Matches.Groups[1].Value })
-        }
+        # 从 module.prop 文件中获取版本信息
+        $modulePropContent = Get-Content -Path .\module.prop -Raw
+        $version = $modulePropContent | Select-String -Pattern "version=(.+)" | ForEach-Object { $_.Matches.Groups[1].Value }
+        $versionCode = $modulePropContent | Select-String -Pattern "versioncode=(.+)" | ForEach-Object { $_.Matches.Groups[1].Value }
+        
         Write-Host "Current version: $version"
-        $content = Get-Content -Path .\update.json -Raw
-        $content = $content -replace '"version": ".*?"', "`"version`": `"$version`""
-        $content = $content -replace 'SwitchHosts-.*?.zip', "SwitchHosts-$version.zip"
-        $content | Set-Content -Path .\update.json -Force
+        Write-Host "Current version code: $versionCode"
+        
+        # 更新 update.json 文件
+        $updateJsonContent = Get-Content -Path .\update.json -Raw
+        $updateJsonContent = $updateJsonContent -replace '"version": ".*?"', "`"version`": `"$version`""
+        $updateJsonContent = $updateJsonContent -replace '"versionCode": \d+', "`"versionCode`": $versionCode"
+        $updateJsonContent | Set-Content -Path .\update.json -Force
         Get-Content -Path .\update.json  # 显示更新后的内容
         
     - name: Commit update.json changes
