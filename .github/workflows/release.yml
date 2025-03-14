@@ -100,8 +100,8 @@ jobs:
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        tag_name: ${{ github.ref }}
-        name: Release ${{ github.ref }}
+        tag_name: ${{ github.ref_name }}  # 使用 github.ref_name 获取标签名称
+        name: Release ${{ github.ref_name }}
         body: |
           ${{ steps.changelog.outputs.changelog }}
         generate_release_notes: false
