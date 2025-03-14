@@ -45,9 +45,32 @@ jobs:
     - name: Zip module
       shell: pwsh
       run: |
-        # 确保 system 文件夹被包含，排除不需要的文件
-        Compress-Archive -Path * -DestinationPath SwitchHosts-${{ github.ref_name }}.zip -Exclude ".git", ".github", ".vscode", "*.md", ".gitignore", ".gitattributes", "changelog.md", "update.json"
+        # 确保所有文件都被包含，只排除特定文件
+        $excludeFiles = @(".git", ".github", ".vscode", "*.md", ".gitignore", ".gitattributes", "changelog.md", "update.json")
+        $filesToZip = Get-ChildItem -Path . -Exclude $excludeFiles
         
+        # 显示将要打包的文件
+        Write-Host "Files to be zipped:"
+        $filesToZip | ForEach-Object { Write-Host $_.FullName }
+        
+        # 创建临时目录用于打包
+        New-Item -ItemType Directory -Path .\temp_for_zip -Force
+        
+        # 复制所有需要的文件到临时目录
+        $filesToZip | ForEach-Object {
+            if ($_.PSIsContainer) {
+                Copy-Item -Path $_.FullName -Destination .\temp_for_zip\ -Recurse -Force
+            } else {
+                Copy-Item -Path $_.FullName -Destination .\temp_for_zip\ -Force
+            }
+        }
+        
+        # 打包临时目录中的所有文件
+        Compress-Archive -Path .\temp_for_zip\* -DestinationPath SwitchHosts-${{ github.ref_name }}.zip -Force
+        
+        # 清理临时目录
+        Remove-Item -Path .\temp_for_zip -Recurse -Force
+
     - name: Verify zip contents
       shell: pwsh
       run: |
