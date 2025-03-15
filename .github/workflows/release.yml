@@ -8,33 +8,31 @@ on:
 jobs:
   build:
     name: Release
-    runs-on: windows-latest
-    
+    runs-on: ubuntu-latest  # 修改运行环境为 Ubuntu
+
     steps:
     - uses: actions/checkout@v3
       with:
-        fetch-depth: 0  # 获取完整历史记录，便于版本比较
-        token: ${{ secrets.GITHUB_TOKEN }}  # 确保有足够权限进行推送
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Update version in update.json
-      shell: pwsh
+      shell: bash  # 修改 shell 为 bash
       run: |
         # 从 module.prop 文件中获取版本信息
-        $modulePropContent = Get-Content -Path .\module.prop -Raw
-        $version = $modulePropContent | Select-String -Pattern "version=(.+)" | ForEach-Object { $_.Matches.Groups[1].Value }
-        $versionCode = $modulePropContent | Select-String -Pattern "versioncode=(.+)" | ForEach-Object { $_.Matches.Groups[1].Value }
+        version=$(grep -oP 'version=\K.*' module.prop)
+        versionCode=$(grep -oP 'versioncode=\K.*' module.prop)
         
-        Write-Host "Current version: $version"
-        Write-Host "Current version code: $versionCode"
+        echo "Current version: $version"
+        echo "Current version code: $versionCode"
         
         # 更新 update.json 文件
-        $updateJsonContent = Get-Content -Path .\update.json -Raw
-        $updateJsonContent = $updateJsonContent -replace '"version": ".*?"', "`"version`": `"$version`""
-        $updateJsonContent = $updateJsonContent -replace '"versionCode": \d+', "`"versionCode`": $versionCode"
-        $updateJsonContent | Set-Content -Path .\update.json -Force
-        Get-Content -Path .\update.json  # 显示更新后的内容
-        
+        sed -i "s/\"version\": \".*\"/\"version\": \"$version\"/" update.json
+        sed -i "s/\"versionCode\": [0-9]\+/\"versionCode\": $versionCode/" update.json
+        cat update.json  # 显示更新后的内容
+
     - name: Commit update.json changes
+      shell: bash  # 修改 shell 为 bash
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
@@ -44,58 +42,53 @@ jobs:
         git push origin HEAD:main  # 推送到main分支
 
     - name: List all files before zip
-      shell: pwsh
+      shell: bash  # 修改 shell 为 bash
       run: |
-        Get-ChildItem -Path . -Recurse | Select-Object FullName
+        find . -type f -print
 
     - name: Zip module
-      shell: pwsh
+      shell: bash  # 修改 shell 为 bash
       run: |
         # 确保所有文件都被包含，只排除特定文件
-        $excludeFiles = @(".git", ".github", ".vscode", "*.md", ".gitignore", ".gitattributes", "changelog.md", "update.json")
-        $filesToZip = Get-ChildItem -Path . -Exclude $excludeFiles
-        
+        excludeFiles=".git .github .vscode *.md .gitignore .gitattributes changelog.md update.json"
+        filesToZip=$(find . -type f | grep -vE "$excludeFiles")
+
         # 显示将要打包的文件
-        Write-Host "Files to be zipped:"
-        $filesToZip | ForEach-Object { Write-Host $_.FullName }
-        
+        echo "Files to be zipped:"
+        echo "$filesToZip"
+
         # 创建临时目录用于打包
-        New-Item -ItemType Directory -Path .\temp_for_zip -Force
-        
+        mkdir -p temp_for_zip
+
         # 复制所有需要的文件到临时目录
-        $filesToZip | ForEach-Object {
-            if ($_.PSIsContainer) {
-                Copy-Item -Path $_.FullName -Destination .\temp_for_zip\ -Recurse -Force
-            } else {
-                Copy-Item -Path $_.FullName -Destination .\temp_for_zip\ -Force
-            }
-        }
-        
-        # 打包临时目录中的所有文件
-        Compress-Archive -Path .\temp_for_zip\* -DestinationPath SwitchHosts-${{ github.ref_name }}.zip -Force
-        
+        for file in $filesToZip; do
+          cp --parents "$file" temp_for_zip/
+        done
+
+        # 使用 APK 模式打包（使用 -9 最高压缩级别和 -X 排除额外属性）
+        cd temp_for_zip && zip -r -9 -X ../SwitchHosts-${{ github.ref_name }}.zip * && cd ..
+
         # 清理临时目录
-        Remove-Item -Path .\temp_for_zip -Recurse -Force
+        rm -rf temp_for_zip
 
     - name: Verify zip contents
-      shell: pwsh
+      shell: bash  # 修改 shell 为 bash
       run: |
-        # 验证 zip 文件内容
-        Expand-Archive -Path SwitchHosts-${{ github.ref_name }}.zip -DestinationPath .\verify_zip -Force
-        Get-ChildItem -Path .\verify_zip -Recurse | Select-Object FullName
+        mkdir -p verify_zip
+        unzip SwitchHosts-${{ github.ref_name }}.zip -d verify_zip
+        find verify_zip -type f -print
 
     - name: Read changelog
       id: changelog
-      shell: pwsh
+      shell: bash  # 修改 shell 为 bash
       run: |
-        $changelog = Get-Content -Path .\changelog.md -Raw
+        changelog=$(cat changelog.md)
         # 对 changelog 内容进行格式化处理，移除不兼容的字符
-        $formattedChangelog = $changelog -replace '##', ''  # 移除 Markdown 标题符号
-        $formattedChangelog = $formattedChangelog -replace '\*', '-'  # 将星号替换为短横线
+        formattedChangelog=$(echo "$changelog" | sed 's/##//g' | sed 's/\*/-/g')
         echo "Changelog content: $formattedChangelog"  # 调试信息
-        echo "changelog<<EOF" >> $env:GITHUB_OUTPUT
-        echo "$formattedChangelog" >> $env:GITHUB_OUTPUT
-        echo "EOF" >> $env:GITHUB_OUTPUT
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        echo "$formattedChangelog" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
 
     - name: Create Release and Upload Release Asset
       uses: softprops/action-gh-release@v1
