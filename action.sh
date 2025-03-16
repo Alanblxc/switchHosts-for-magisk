@@ -23,7 +23,8 @@ fi
 local system_host="/system/etc/hosts"
 if test ! -f "${system_host}" ;then
   # 使用空格分隔的字符串来定义可能的hosts文件位置
-  local possible_hosts="/system/etc/hosts /system_ext/etc/hosts /vendor/etc/hosts /product/etc/hosts"
+ # local possible_hosts="/system/etc/hosts /system_ext/etc/hosts /vendor/etc/hosts /product/etc/hosts" 
+ local possible_hosts="/system/etc/hosts"
   local found=0
   
   for file in $possible_hosts; do
