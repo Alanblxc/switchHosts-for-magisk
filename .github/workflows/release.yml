@@ -101,6 +101,45 @@ jobs:
           echo "$formattedChangelog" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      # 新增步骤：检查是否已存在相同标签的 release
+      - name: Check if release exists
+        id: check_release
+        shell: bash
+        run: |
+          release_exists=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ github.ref_name }}")
+          
+          echo "HTTP Status Code: $release_exists"
+          
+          if [ "$release_exists" = "200" ]; then
+            echo "Release already exists for tag ${{ github.ref_name }}"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "No existing release found for tag ${{ github.ref_name }}"
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      # 删除已存在的 release（如果存在）
+      - name: Delete existing release
+        if: steps.check_release.outputs.exists == 'true'
+        shell: bash
+        run: |
+          # 获取 release ID
+          release_id=$(curl -s \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ github.ref_name }}" \
+            | jq -r '.id')
+          
+          echo "Deleting existing release with ID: $release_id"
+          
+          # 删除 release
+          curl -X DELETE \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/$release_id"
+          
+          echo "Existing release deleted successfully"
+
       - name: Create Release and Upload Release Asset
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
