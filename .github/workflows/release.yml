@@ -26,9 +26,18 @@ jobs:
         echo "Current version: $version"
         echo "Current version code: $versionCode"
         
+        # 构建下载链接
+        zipUrl="https://github.com/Alanblxc/switchHosts-for-magisk/releases/download/${{ github.ref_name }}/SwitchHosts-${{ github.ref_name }}.zip"
+        
         # 更新 update.json 文件
-        sed -i "s/\"version\": \".*\"/\"version\": \"$version\"/" update.json
-        sed -i "s/\"versionCode\": [0-9]\+/\"versionCode\": $versionCode/" update.json
+        cat > update.json << EOF
+{
+  "version": "$version",
+  "versionCode": $versionCode,
+  "zipUrl": "$zipUrl",
+  "changelog": "https://hub.gitmirror.com/?q=https://raw.githubusercontent.com/Alanblxc/switchHosts-for-magisk/main/changelog.md"
+}
+EOF
         cat update.json  # 显示更新后的内容
 
     - name: Commit update.json changes
