@@ -30,7 +30,7 @@ jobs:
         zipUrl="https://github.com/Alanblxc/switchHosts-for-magisk/releases/download/${{ github.ref_name }}/SwitchHosts-${{ github.ref_name }}.zip"
         
         # 更新 update.json 文件
-        cat > update.json << EOF
+        cat > update.json << 'EOF'
 {
   "version": "$version",
   "versionCode": $versionCode,
