@@ -46,6 +46,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          git config pull.rebase true  # 设置pull策略为rebase
           git add update.json
           git commit -m "Update version in update.json to ${{ github.ref_name }}" || echo "No changes to commit"
           git pull --rebase origin main  # 拉取远程更改并使用rebase策略
