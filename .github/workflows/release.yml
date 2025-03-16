@@ -48,7 +48,7 @@ jobs:
           git config --local user.name "GitHub Action"
           git add update.json
           git commit -m "Update version in update.json to ${{ github.ref_name }}" || echo "No changes to commit"
-          git pull origin main  # 拉取远程更改
+          git pull --rebase origin main  # 拉取远程更改并使用rebase策略
           git push origin HEAD:main  # 推送到main分支
 
       - name: List all files before zip
