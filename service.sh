@@ -59,22 +59,14 @@ log "success" "开机成功"
 # 等待联网
 log "wait" "等待联网"
 PING_ADDRESS=www.baidu.com
-MAX_ATTEMPTS=12
-attempt=0
 
-while [ $attempt -lt $MAX_ATTEMPTS ]; do
+while true; do
     if ping -c 1 -W 3 $PING_ADDRESS > /dev/null 2>&1; then
         log "success" "联网成功"
         break
     else
-        attempt=$((attempt + 1))
-        log "fail" "联网失败，正在重试... ($attempt/$MAX_ATTEMPTS)"
+        log "wait" "等待网络连接..."
         sleep 5
-    fi
-    
-    if [ $attempt -eq $MAX_ATTEMPTS ]; then
-        log "error" "网络连接超时，将在下次启动时重试"
-        exit 1
     fi
 done
 
