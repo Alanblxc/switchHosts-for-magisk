@@ -11,105 +11,106 @@ jobs:
     runs-on: ubuntu-latest  # 修改运行环境为 Ubuntu
 
     steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Update version in update.json
-      shell: bash  # 修改 shell 为 bash
-      run: |
-        # 从 module.prop 文件中获取版本信息
-        version=$(grep -oP 'version=\K.*' module.prop)
-        versionCode=$(grep -oP 'versioncode=\K.*' module.prop)
-        
-        echo "Current version: $version"
-        echo "Current version code: $versionCode"
-        
-        # 构建下载链接
-        zipUrl="https://github.com/Alanblxc/switchHosts-for-magisk/releases/download/${{ github.ref_name }}/SwitchHosts-${{ github.ref_name }}.zip"
-        
-        # 更新 update.json 文件
-        cat > update.json << 'EOF'
-{
-  "version": "$version",
-  "versionCode": $versionCode,
-  "zipUrl": "$zipUrl",
-  "changelog": "https://hub.gitmirror.com/?q=https://raw.githubusercontent.com/Alanblxc/switchHosts-for-magisk/main/changelog.md"
-}
-EOF
-        cat update.json  # 显示更新后的内容
+      - name: Update version in update.json
+        shell: bash  # 修改 shell 为 bash
+        run: |
+          # 从 module.prop 文件中获取版本信息
+          version=$(grep -oP 'version=\K.*' module.prop)
+          versionCode=$(grep -oP 'versioncode=\K.*' module.prop)
+          
+          echo "Current version: $version"
+          echo "Current version code: $versionCode"
+          
+          # 构建下载链接
+          zipUrl="https://github.com/Alanblxc/switchHosts-for-magisk/releases/download/${{ github.ref_name }}/SwitchHosts-${{ github.ref_name }}.zip"
+          
+          # 更新 update.json 文件
+          cat > update.json << EOF
+          {
+            "version": "$version",
+            "versionCode": $versionCode,
+            "zipUrl": "$zipUrl",
+            "changelog": "https://hub.gitmirror.com/?q=https://raw.githubusercontent.com/Alanblxc/switchHosts-for-magisk/main/changelog.md"
+          }
+          EOF
 
-    - name: Commit update.json changes
-      shell: bash  # 修改 shell 为 bash
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add update.json
-        git commit -m "Update version in update.json to ${{ github.ref_name }}" || echo "No changes to commit"
-        git pull origin main  # 拉取远程更改
-        git push origin HEAD:main  # 推送到main分支
+          cat update.json  # 显示更新后的内容
 
-    - name: List all files before zip
-      shell: bash  # 修改 shell 为 bash
-      run: |
-        find . -type f -print
+      - name: Commit update.json changes
+        shell: bash  # 修改 shell 为 bash
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add update.json
+          git commit -m "Update version in update.json to ${{ github.ref_name }}" || echo "No changes to commit"
+          git pull origin main  # 拉取远程更改
+          git push origin HEAD:main  # 推送到main分支
 
-    - name: Zip module
-      shell: bash  # 修改 shell 为 bash
-      run: |
-        # 确保所有文件都被包含，只排除特定文件
-        excludeFiles=".git .github .vscode *.md .gitignore .gitattributes changelog.md update.json"
-        filesToZip=$(find . -type f | grep -vE "$excludeFiles")
+      - name: List all files before zip
+        shell: bash  # 修改 shell 为 bash
+        run: |
+          find . -type f -print
 
-        # 显示将要打包的文件
-        echo "Files to be zipped:"
-        echo "$filesToZip"
+      - name: Zip module
+        shell: bash  # 修改 shell 为 bash
+        run: |
+          # 确保所有文件都被包含，只排除特定文件
+          excludeFiles=".git .github .vscode *.md .gitignore .gitattributes changelog.md update.json"
+          filesToZip=$(find . -type f | grep -vE "$excludeFiles")
 
-        # 创建临时目录用于打包
-        mkdir -p temp_for_zip
+          # 显示将要打包的文件
+          echo "Files to be zipped:"
+          echo "$filesToZip"
 
-        # 复制所有需要的文件到临时目录
-        for file in $filesToZip; do
-          cp --parents "$file" temp_for_zip/
-        done
+          # 创建临时目录用于打包
+          mkdir -p temp_for_zip
 
-        # 使用 APK 模式打包（使用 -9 最高压缩级别和 -X 排除额外属性）
-        cd temp_for_zip && zip -r -9 -X ../SwitchHosts-${{ github.ref_name }}.zip * && cd ..
+          # 复制所有需要的文件到临时目录
+          for file in $filesToZip; do
+            cp --parents "$file" temp_for_zip/
+          done
 
-        # 清理临时目录
-        rm -rf temp_for_zip
+          # 使用 APK 模式打包（使用 -9 最高压缩级别和 -X 排除额外属性）
+          cd temp_for_zip && zip -r -9 -X ../SwitchHosts-${{ github.ref_name }}.zip * && cd ..
 
-    - name: Verify zip contents
-      shell: bash  # 修改 shell 为 bash
-      run: |
-        mkdir -p verify_zip
-        unzip SwitchHosts-${{ github.ref_name }}.zip -d verify_zip
-        find verify_zip -type f -print
+          # 清理临时目录
+          rm -rf temp_for_zip
 
-    - name: Read changelog
-      id: changelog
-      shell: bash  # 修改 shell 为 bash
-      run: |
-        changelog=$(cat changelog.md)
-        # 对 changelog 内容进行格式化处理，移除不兼容的字符
-        formattedChangelog=$(echo "$changelog" | sed 's/##//g' | sed 's/\*/-/g')
-        echo "Changelog content: $formattedChangelog"  # 调试信息
-        echo "changelog<<EOF" >> $GITHUB_OUTPUT
-        echo "$formattedChangelog" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
+      - name: Verify zip contents
+        shell: bash  # 修改 shell 为 bash
+        run: |
+          mkdir -p verify_zip
+          unzip SwitchHosts-${{ github.ref_name }}.zip -d verify_zip
+          find verify_zip -type f -print
 
-    - name: Create Release and Upload Release Asset
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/')
-      with:
-        tag_name: ${{ github.ref_name }}  # 使用 github.ref_name 获取标签名称
-        name: Release ${{ github.ref_name }}
-        body: |
-          ${{ steps.changelog.outputs.changelog }}
-        generate_release_notes: false
-        draft: false
-        prerelease: false
-        files: |
-          SwitchHosts-${{ github.ref_name }}.zip
-          LICENSE
+      - name: Read changelog
+        id: changelog
+        shell: bash  # 修改 shell 为 bash
+        run: |
+          changelog=$(cat changelog.md)
+          # 对 changelog 内容进行格式化处理，移除不兼容的字符
+          formattedChangelog=$(echo "$changelog" | sed 's/##//g' | sed 's/\*/-/g')
+          echo "Changelog content: $formattedChangelog"  # 调试信息
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$formattedChangelog" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release and Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          tag_name: ${{ github.ref_name }}  # 使用 github.ref_name 获取标签名称
+          name: Release ${{ github.ref_name }}
+          body: |
+            ${{ steps.changelog.outputs.changelog }}
+          generate_release_notes: false
+          draft: false
+          prerelease: false
+          files: |
+            SwitchHosts-${{ github.ref_name }}.zip
+            LICENSE
