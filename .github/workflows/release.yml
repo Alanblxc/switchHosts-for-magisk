@@ -21,7 +21,7 @@ jobs:
         run: |
           # 从 module.prop 文件中获取版本信息
           version=$(grep -oP 'version=\K.*' module.prop)
-          versionCode=$(grep -oP 'versioncode=\K.*' module.prop)
+          versionCode=$(grep -oP 'versionCode=\K.*' module.prop)
           
           echo "Current version: $version"
           echo "Current version code: $versionCode"
